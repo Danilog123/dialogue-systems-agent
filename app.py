@@ -7,6 +7,7 @@ from tools import search_tool, weather_tool, date_tool, summarize_webpage_tool, 
 
 #Use the GPT-4o mini as llm
 import os
+#add OpenAIKey
 os.environ["OPENAI_API_KEY"] = ""
 
 llm = OpenAI(model="gpt-4o-mini")

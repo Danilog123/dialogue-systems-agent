@@ -75,7 +75,7 @@ def summarize_webpage_tool():
             "Provide a URL, and it will return the full text content from the page's body."
         )
     )
-
+#NEW Tool
 def browse_rausgegangen_de_categories(city:str, category: str,) -> str:
     url= f"https://rausgegangen.de/{city}/kategorie/{category}"
     print(url)
