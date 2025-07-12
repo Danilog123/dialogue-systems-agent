@@ -1,10 +1,12 @@
-#from llama_index.core.tools import FunctionTool
-#from llama_index.core.tools.ondemand_loader_tool import OnDemandLoaderTool
-from llama_index.tools.duckduckgo import DuckDuckGoSearchToolSpec
+from llama_index.core.tools import FunctionTool
+from llama_index.core.schema import Document
+from playwright.sync_api import sync_playwright
+from ddgs import DDGS
 import requests
 from datetime import datetime
+import json
+from llama_index.tools.duckduckgo import DuckDuckGoSearchToolSpec
 
-# Search tool
 def search_tool():
     '''
     Use DuckDuckGoSearchTool for web search.
@@ -16,6 +18,29 @@ def search_tool():
         description="Search for relevant web pages based on a query. Returns a list of search results with title, body and URL."
     )
     return tool
+# Search tool
+def duckduckgo_search(query: str, max_results: int = 5) -> list[Document]:
+    """
+    Search the Web with DuckDuckGo
+    """
+    documents = []
+    with DDGS() as ddgs:
+        results = ddgs.text(query, max_results=max_results)
+        for result in results:
+            content = result.get("body", "")
+            title = result.get("title", "")
+            url = result.get("href", "")
+            metadata = {"title": title, "url": url}
+            documents.append(Document(text=content, metadata=metadata))
+    return documents
+
+
+def duckduckgo_tool():
+    return FunctionTool.from_defaults(
+        fn=duckduckgo_search,
+        name="duckduckgo_websearch",
+        description="Suche nach aktuellen Webinhalten über DuckDuckGo.",
+    )
 # Date
 def get_date():
     now = datetime.now()
@@ -50,9 +75,6 @@ def weather_tool():
         description="Use this tool to get the weather forcast for the next 3 days for a given city. Input is a city name string."
     )
 
-from llama_index.core.tools import FunctionTool
-from playwright.sync_api import sync_playwright
-
 def summarize_webpage(url: str) -> str:
     """
     Loads a webpage using Playwright and returns its inner text content.
@@ -75,7 +97,20 @@ def summarize_webpage_tool():
             "Provide a URL, and it will return the full text content from the page's body."
         )
     )
-#NEW Tool
+def get_category_examples() -> str:
+    with open("example_categories.json", "r") as f:
+        category_examples = json.load(f)
+    return category_examples
+
+def classify_query_tool():
+    return FunctionTool.from_defaults(
+        fn=get_category_examples,
+        name="ClassifyQuery",
+        description="Use this tool to get a dictionary with examples for each category"
+                    "Classify the users query as one of the following categories: party, konzerte-und-musik, markt, theater, shows-und-performances, ausstellung, gesprochenes, food-und-drinks, aktiv-und-kreativ, feste-und-festival, sport, film or kinder-und-familien."
+        ,
+    )
+
 def browse_rausgegangen_de_categories(city:str, category: str,) -> str:
     url= f"https://rausgegangen.de/{city}/kategorie/{category}"
     print(url)
@@ -87,7 +122,6 @@ def browse_rausgegangen_de_categories_tool():
         name="BrowseRausgegangenDeCategories",
         description=(
             "Return the url link of the website."
-            "Classify the users query as one of the following categories: party, konzerte-und-musik, markt, theater, shows-und-performances, ausstellung, gesprochenes, food-und-drinks, aktiv-und-kreativ, feste-und-festival, sport, film or kinder-und-familien."
             "The input parameter are: city name in english in small letters, and one of the given categories."
         )
     )
