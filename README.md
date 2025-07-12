@@ -46,5 +46,5 @@ pip install -r requirements.txt
 
 ### git Bash
 ```
-source .venv\Scripts\activate
+source .venv/Scripts/activate
 ```
