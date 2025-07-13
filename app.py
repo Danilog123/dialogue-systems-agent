@@ -4,11 +4,11 @@ from llama_index.core.agent.workflow import AgentWorkflow, AgentStream, ToolCall
 from llama_index.core.workflow import Context
 from llama_index.llms.openai import OpenAI
 from tools import search_tool, duckduckgo_tool, weather_tool, date_tool, summarize_webpage_tool, browse_rausgegangen_de_categories_tool, classify_query_tool
+from dotenv import load_dotenv
+import gradio as gr
 
-#Use the GPT-4o mini as llm
-import os
-#add OpenAIKey
-os.environ["OPENAI_API_KEY"] = ""
+load_dotenv()
+
 llm = OpenAI(model="gpt-4o-mini")
 
 # Import tools
@@ -38,29 +38,39 @@ agent = AgentWorkflow.from_tools_or_functions(
 
 ctx = Context(agent)
 
-# Run chat
-async def chat():
+async def run_agent(message):
+  handler = agent.run(message, return_stream=True, ctx=ctx, memory=memory)
+  toughts, tool_calls, final = "", "", ""
+  
+  async for ev in handler.stream_events():
+    if isinstance(ev, ToolCallResult):
+      tool_calls += f"🔧 {ev.tool_name}({ev.tool_kwargs}) => {ev.tool_output}\n\n"
+    elif isinstance(ev, AgentStream):
+      toughts += ev.delta
+  
+  final_result = await handler
+  final += str(final_result)
+  return toughts.strip(), tool_calls.strip(), final.strip()
 
-    while True:
-        user_input = input("User: ")
-        if user_input == "exit":
-            break
-        try:
-            handler = agent.run(user_input, return_stream=True, ctx=ctx, memory=memory)
-            # Show Tool calls
-            async for ev in handler.stream_events():
-                if isinstance(ev, ToolCallResult):
-                    print("")
-                    print("Called tool: ", ev.tool_name, ev.tool_kwargs, "=>", ev.tool_output)
-                elif isinstance(ev, AgentStream):  # showing the thought process
-                    print(ev.delta, end="", flush=True)
+with gr.Blocks() as gradio_ui:
+  gr.Markdown("# 🧠 LlamaIndex Tool-Using Chatbot")
 
-            final = await handler
-            print("\n\nAgent final RESPONSE:\n", final)
+  with gr.Row():
+    chatbot = gr.Chatbot(type="messages")
+    with gr.Column():
+      thoughts_box = gr.Textbox(label="🧠 Agent Thoughts", lines=8)
+      tools_box = gr.Textbox(label="🔧 Tool Calls", lines=8)
 
-        except Exception as e:
-            print(e)
+  msg = gr.Textbox(label="Your message")
+  send_btn = gr.Button("Send")
+
+  async def respond(user_input, chat_history):
+    thoughts, tools, final = await run_agent(user_input)
+    chat_history.append({"role": "user", "content": user_input})
+    chat_history.append({"role": "assistant", "content": final})
+    return chat_history, thoughts, tools
+
+  send_btn.click(fn=respond, inputs=[msg, chatbot], outputs=[chatbot, thoughts_box, tools_box])
 
 if __name__ == "__main__":
-    asyncio.run(chat())
-
+  gradio_ui.launch()
