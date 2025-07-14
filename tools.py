@@ -72,7 +72,8 @@ def weather_tool():
     return FunctionTool.from_defaults(
         fn=get_weather,
         name="GetWeather",
-        description="Use this tool to get the weather forcast for the next 3 days for a given city. Input is a city name string."
+        description="Use this tool for outdoor activities to get the weather forcast for the next 3 days for a given city. "
+                    "Input is a city name string."
     )
 
 def summarize_webpage(url: str) -> str:
@@ -91,7 +92,7 @@ def summarize_webpage(url: str) -> str:
 def summarize_webpage_tool():
     return FunctionTool.from_defaults(
         fn=summarize_webpage,
-        name="SummarizeWebPage",
+        name="ExtractAndReadWebPage",
         description=(
             "Use this tool to extract and summarize the full content of a webpage. "
             "Provide a URL, and it will return the full text content from the page's body."
@@ -123,5 +124,6 @@ def browse_rausgegangen_de_categories_tool():
         description=(
             "Return the url link of the website."
             "The input parameter are: city name in english in small letters, and one of the given categories."
+            "Use this tool only for german cities!"
         )
     )
