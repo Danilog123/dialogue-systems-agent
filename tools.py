@@ -1,3 +1,4 @@
+from typing import Optional
 from llama_index.core.tools import FunctionTool
 from llama_index.core.schema import Document
 from playwright.sync_api import sync_playwright
@@ -5,10 +6,11 @@ from ddgs import DDGS
 import requests
 from datetime import datetime
 import json
+import os
+from ics import Calendar, Event
 from llama_index.tools.duckduckgo import DuckDuckGoSearchToolSpec
-from llama_index.readers.maps import OpenMap
-from llama_index.core.readers.base import BaseReader
 
+FACTS_FILE = 'facts.json'
 def search_tool():
     '''
         Use DuckDuckGoSearchTool for web search.
@@ -128,4 +130,62 @@ def browse_rausgegangen_de_categories_tool():
             "The input parameter are: city name in english in small letters, and one of the given categories."
             "Use this tool only for german cities!"
         )
+    )
+
+
+def load_facts():
+    if not os.path.exists(FACTS_FILE):
+        return []
+    with open(FACTS_FILE, "r") as f:
+        return json.load(f)
+
+
+def store_fact(new_fact: str) -> str:
+    facts = load_facts()
+    if new_fact in facts:
+        return f"Fact '{new_fact}' was already stored."
+    else:
+        facts.append(new_fact)
+        with open(FACTS_FILE, "w") as f:
+            json.dump(facts, f)
+        return f"Fact stored: {new_fact}"
+
+
+def store_fact_tool():
+    return FunctionTool.from_defaults(
+        fn=store_fact,
+        name="StoreFact",
+        description="""
+      Use this tool to store a fact about the user.
+      The fact is supplied as a string and stored for future use.
+      This tool returns the fact that was stored.
+    """
+    )
+#Bookmark Tool
+
+#CalenderTool
+# Create a .ics file of the event to export it to a calender
+def create_ics_event(name:str, date:str, time:str, location:Optional[str] = None, url:Optional[str] = None) -> str:
+    c = Calendar()
+    e = Event()
+    e.name = name
+    e.begin = f"{date} {time}"
+    e.location = location if location else ""
+    e.url = url if url else ""
+    c.events.add(e)
+    filename = f"{name}.ics"
+    path = os.path.join("calendar", filename)
+    # Create a folder
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w') as f:
+        f.writelines(c.serialize_iter())
+    return f"{path}"
+
+def create_ics_tool():
+    return FunctionTool.from_defaults(
+        fn=create_ics_event,
+        name="CreateICSEvent",
+        description="Create an .ics file. with a calendar entry. "
+                    "It takes event name, date and starting time of the event as input. The location of the event and the url of the event are optional inputs. "
+                    "It returns a confirmation that the file was created."
     )
