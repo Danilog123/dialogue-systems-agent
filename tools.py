@@ -11,22 +11,20 @@ from ics import Calendar, Event
 from llama_index.tools.duckduckgo import DuckDuckGoSearchToolSpec
 
 FACTS_FILE = 'facts.json'
+
 def search_tool():
     '''
-        Use DuckDuckGoSearchTool for web search.
-        '''
+    Use DuckDuckGoSearchTool for web search.
+    '''
     tool_spec = DuckDuckGoSearchToolSpec()
     return FunctionTool.from_defaults(
         fn=tool_spec.duckduckgo_full_search,
         name="WebSearch",
         description="Search for relevant web pages based on a query. Returns a list of search results with title, body and URL."
     )
-    return tool
+
 # Search tool
 def duckduckgo_search(query: str, max_results: int = 5) -> list[Document]:
-    """
-    Search the Web with DuckDuckGo
-    """
     documents = []
     with DDGS() as ddgs:
         results = ddgs.text(query, max_results=max_results)
@@ -39,6 +37,9 @@ def duckduckgo_search(query: str, max_results: int = 5) -> list[Document]:
     return documents
 
 def duckduckgo_tool():
+    """
+    Search the Web with DuckDuckGo
+    """
     return FunctionTool.from_defaults(
         fn=duckduckgo_search,
         name="duckduckgo_websearch",
@@ -61,7 +62,7 @@ def date_tool():
     )
 # Weather Tool
 def get_weather(city: str) -> str:
-    # Use wttr.in, simply web page for the weather forecast of next 3 days
+    # Use wttr.in, simple web page for the weather forecast of next 3 days
     try:
         response = requests.get(f"https://wttr.in/{city}", timeout=10)
         response.raise_for_status()
@@ -84,16 +85,19 @@ def summarize_webpage(url: str) -> str:
     """
     Loads a webpage using Playwright and returns its inner text content.
     """
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+    with sync_playwright() as playwright:
+        chromium = playwright.chromium
+        browser = chromium.launch(headless=False)
         page = browser.new_page()
-        page.goto(url, timeout=60000)
-        page.wait_for_timeout(5000)  # wait for lazy content to load
+        page.goto(url)
         text = page.inner_text("body")
         browser.close()
         return text
 
 def summarize_webpage_tool():
+    '''
+    Extract the content of a webpage using Playwright and returns its inner text content.
+    '''
     return FunctionTool.from_defaults(
         fn=summarize_webpage,
         name="ExtractAndReadWebPage",
@@ -102,12 +106,18 @@ def summarize_webpage_tool():
             "Provide a URL, and it will return the full text content from the page's body."
         )
     )
+
 def get_category_examples() -> str:
+    # Read json-file with examples of events taken from rausgegangen.de
     with open("example_categories.json", "r") as f:
         category_examples = json.load(f)
     return category_examples
 
+
 def classify_query_tool():
+    '''
+    Classify an event in one of the rausgegangen.de categories.
+    '''
     return FunctionTool.from_defaults(
         fn=get_category_examples,
         name="ClassifyQuery",
@@ -122,6 +132,9 @@ def browse_rausgegangen_de_categories(city:str, category: str,) -> str:
     return url
 
 def browse_rausgegangen_de_categories_tool():
+    '''
+    Browse the rausgegangen.de, the urls have a defined structure.
+    '''
     return FunctionTool.from_defaults(
         fn=browse_rausgegangen_de_categories,
         name="BrowseRausgegangenDeCategories",
@@ -132,6 +145,24 @@ def browse_rausgegangen_de_categories_tool():
         )
     )
 
+def more_information_rausgegangen_event(url:str, event_name:str) -> str:
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=False)
+        context = browser.new_context()
+        # create a new page inside context.
+        page = context.new_page()
+        page.goto(url)
+        page.get_by_role("link", name=event_name).click()
+        context.close()
+        return page.url
+
+def more_information_tool():
+    return FunctionTool.from_defaults(
+        fn=more_information_rausgegangen_event,
+        name="Extract_Event_URL",
+        description=("Use this tool to get an url about one event. As input it gets the url of the category website and the name of the event."
+                     "It only returns the link of the website.")
+    )
 
 def load_facts():
     if not os.path.exists(FACTS_FILE):
@@ -152,6 +183,9 @@ def store_fact(new_fact: str) -> str:
 
 
 def store_fact_tool():
+    '''
+    Store facts about the user in a json file.
+    '''
     return FunctionTool.from_defaults(
         fn=store_fact,
         name="StoreFact",
@@ -161,10 +195,9 @@ def store_fact_tool():
       This tool returns the fact that was stored.
     """
     )
-#Bookmark Tool
 
-#CalenderTool
-# Create a .ics file of the event to export it to a calender
+#CalendarTool
+# Create a .ics file of the event to export it to a calendar
 def create_ics_event(name:str, date:str, time:str, location:Optional[str] = None, url:Optional[str] = None) -> str:
     c = Calendar()
     e = Event()
@@ -175,17 +208,22 @@ def create_ics_event(name:str, date:str, time:str, location:Optional[str] = None
     c.events.add(e)
     filename = f"{name}.ics"
     path = os.path.join("calendar", filename)
-    # Create a folder
+    # Create a folder, if necessary
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w') as f:
         f.writelines(c.serialize_iter())
     return f"{path}"
 
 def create_ics_tool():
+    '''
+    Create a calendar entry of an event. Name, date and time are mandatory. location, url are optional.
+    '''
     return FunctionTool.from_defaults(
         fn=create_ics_event,
         name="CreateICSEvent",
         description="Create an .ics file. with a calendar entry. "
                     "It takes event name, date and starting time of the event as input. The location of the event and the url of the event are optional inputs. "
-                    "It returns a confirmation that the file was created."
+                    "It returns the path of the file."
     )
+
+

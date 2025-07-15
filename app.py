@@ -2,7 +2,7 @@ from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.agent.workflow import ReActAgent, AgentWorkflow, AgentStream, ToolCallResult
 from llama_index.core.workflow import Context
 from llama_index.llms.openai import OpenAI
-from tools import search_tool, duckduckgo_tool, weather_tool, date_tool, summarize_webpage_tool, browse_rausgegangen_de_categories_tool, classify_query_tool, load_facts, store_fact_tool, create_ics_tool
+from tools import search_tool, duckduckgo_tool, weather_tool, date_tool, summarize_webpage_tool, browse_rausgegangen_de_categories_tool, classify_query_tool, load_facts, store_fact_tool, create_ics_tool, more_information_tool
 from dotenv import load_dotenv
 import gradio as gr
 import os
@@ -14,12 +14,12 @@ load_dotenv()
 llm = OpenAI(model="gpt-4o-mini")
 
 # Import tools
-tools = [duckduckgo_tool(), summarize_webpage_tool(), weather_tool(), date_tool(), browse_rausgegangen_de_categories_tool(), classify_query_tool(), store_fact_tool(), create_ics_tool()]
+tools = [duckduckgo_tool(), summarize_webpage_tool(), weather_tool(), date_tool(), browse_rausgegangen_de_categories_tool(), classify_query_tool(), store_fact_tool(), create_ics_tool(), more_information_tool()]
 
 #Init Memory
 memory = ChatMemoryBuffer.from_defaults(token_limit=40000)
 
-# noinspection PyPackageRequirements
+# System_prompt
 system_prompt = """
         You are a helpful assistant that supports users in finding real-world events using tools.
         Always answer in the query language.
@@ -35,7 +35,7 @@ system_prompt = """
         - Never assume today's date implicitly — reason only based on explicit values.
 
         TOOL USAGE RULES:
-        - If you use duckduckgo_websearch or BrowseRausgegangenDeCategories, you MUST follow up with SummarizeWebPage to extract page content.
+        - If you use duckduckgo_websearch or BrowseRausgegangenDeCategories, you MUST follow up with ExtractAndReadWebPage to extract page content.
         - Use classify_query_tool to choose a suitable category.
         - Use BrowseRausgegangenDeCategories for events in Germany. 
         - If no events are found in one category, try another. After two unsuccessful attempts, use websearch instead.
@@ -43,7 +43,7 @@ system_prompt = """
         - Always use the weather tool if the request involves outdoor activities.
         - Store facts about the user using the StoreFact tool. These facts should help you to complete your task better and supply the user with more relevant information. Store facts like but not exclusivly: hometown, age, taste in activities, personal habits, social situation, etc. ALWAYS THINK ABOUT WHAT YOU CAN STORE ABOUT THE USER. Store information on your own, even if it not clearly stated as a fact.
         - DO NOT USE THE StoreFact TOOL TO RETRIEVE FACTS. THE FACTS GET PRESENTED TO YOU BEFORE THE CONVERSATION WITH THE USER.
-        - You can use create_ics_tool to create an calender entry. Ask the user if he wants one.
+        - You can use create_ics_tool to create an calendar entry. Ask the user if he wants one.
         
         PAGE CONTENT RULES:
         - Only suggest events if the name, date, time, and location were extracted from the actual page content (via SummarizeWebPage).
