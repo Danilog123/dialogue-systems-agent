@@ -6,11 +6,13 @@ import requests
 from datetime import datetime
 import json
 from llama_index.tools.duckduckgo import DuckDuckGoSearchToolSpec
+from llama_index.readers.maps import OpenMap
+from llama_index.core.readers.base import BaseReader
 
 def search_tool():
     '''
-    Use DuckDuckGoSearchTool for web search.
-    '''
+        Use DuckDuckGoSearchTool for web search.
+        '''
     tool_spec = DuckDuckGoSearchToolSpec()
     return FunctionTool.from_defaults(
         fn=tool_spec.duckduckgo_full_search,
@@ -34,12 +36,12 @@ def duckduckgo_search(query: str, max_results: int = 5) -> list[Document]:
             documents.append(Document(text=content, metadata=metadata))
     return documents
 
-
 def duckduckgo_tool():
     return FunctionTool.from_defaults(
         fn=duckduckgo_search,
         name="duckduckgo_websearch",
-        description="Suche nach aktuellen Webinhalten über DuckDuckGo.",
+        description="Use this to answer factual questions about public figures, dates, countries, laws, or historical facts. Do not guess. Return a short fact and source URL."
+                    "Search for relevant web pages based on a query. Returns a list of search results with title, body and URL.",
     )
 # Date
 def get_date():

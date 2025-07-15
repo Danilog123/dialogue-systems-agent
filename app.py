@@ -1,4 +1,3 @@
-import asyncio
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.agent.workflow import ReActAgent, AgentWorkflow, AgentStream, ToolCallResult
 from llama_index.core.workflow import Context
@@ -19,12 +18,7 @@ tools = [duckduckgo_tool(), summarize_webpage_tool(), weather_tool(), date_tool(
 #Init Memory
 memory = ChatMemoryBuffer.from_defaults(token_limit=40000)
 
-# Define Agent
-agent = ReActAgent(
-    tools=tools,
-    llm=llm,
-    system_prompt=( f"""
-        You are a helpful assistant that supports users in finding real-world events using tools.
+system_prompt = """You are a helpful assistant that supports users in finding real-world events using tools.
         Always answer in the query language.
 
         GENERAL BEHAVIOR:
@@ -61,7 +55,12 @@ agent = ReActAgent(
 
         Your goal is to be **factual, cautious, and honest**. It's better to admit uncertainty than to make something up.
         """
-    )
+
+# Define Agent
+agent = AgentWorkflow.from_tools_or_functions(
+    tools_or_functions=tools,
+    llm=llm,
+    system_prompt=system_prompt
 )
 
 ctx = Context(agent)
