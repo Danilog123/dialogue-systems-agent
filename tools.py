@@ -111,7 +111,7 @@ def get_category_examples() -> str:
     # Read json-file with examples of events taken from rausgegangen.de
     with open("example_categories.json", "r") as f:
         category_examples = json.load(f)
-    return "Observation: " + category_examples + "\n"
+    return "Observation: " + str(category_examples) + "\n"
 
 
 def classify_query_tool():
