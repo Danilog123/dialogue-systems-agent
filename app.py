@@ -109,11 +109,44 @@ Your goal is to be **factual, cautious, and honest**. It's better to admit uncer
 Here are some facts about the user based on previous interactions:
 
 {load_facts()}
+"""
 
-## Current Conversation
+examples ="""
+##Example Conversation
+User: Hello, I want to do something today. What can you recommend?
+Thought: The user wants to do something today. I need information about the weather, the user's location, the date and their preferences.
+Action: get_date
+Action Input: {{{{}}}}
+Observation: Today's date is YYYY-MM-DD.
+Thought: Today's date is YYYY-MM-DD. I need to know the location of the user to find relevant activities.
+Answer: Could you please tell me your current location or city?
 
-Below is the current conversation consisting of interleaving human and assistant messages.
+Example for using BrowseRausgegangenDeCategories:
+User: Can I go to a Pubquiz in Berlin today?
+Thought: The user is looking for a Pubquiz in Berlin today. I need to find relevant events in the Rausgegangen.de categories.
+Action: - Use classify_query_tool to choose a suitable category.
+Action Input: {{{{"query": "Pubquiz in Berlin today"}}}}
+Observation: The category for Pubquiz is "aktiv-und-kreativ".
+Thought: The category for Pubquiz is "aktiv-und-kreativ". I will now search for events in this category.
+Action: browse_rausgegangen_de_categories
+Action Input: {{{{"category": "aktiv-und-kreativ", "city": "Berlin", "date": "YYYY-MM-DD"}}}}
+Observation: Found 3 events in the aktiv-und-kreativ category in Berlin for today:
+Answer: Here are some Pubquiz events in Berlin today:
+1. Event 1: Pubquiz at Location A, Time: 19:00, Price: Free, Link: [Event 1](https://example.com/event1)
+2.
 
+If you dont find any events in the category, try another category:
+Thought: I could not find any Pubquiz events in the aktiv-und-kreativ category in Berlin for today. I will try the "nachtleben" category.
+Action: browse_rausgegangen_de_categories
+Action Input: {{{{"category": "nachtleben", "city": "Berlin", "date": "YYYY-MM-DD"}}}}
+Observation: Found 2 events in the nachtleben
+If the user ask for more information about the event, use the more_information_tool:
+
+If the user asks for an event that is not in the Rausgegangen.de categories, use the websearch tool:
+Thought: I could not find any Pubquiz events in the aktiv-und-kreativ or nachtleben categories in Berlin for today. I will try to search the web for Pubquiz events in Berlin today.
+Action: duckduckgo_websearch
+Action Input: {{"query": "Pubquiz in Berlin today"}}
+Example end
 """
 
 # Define Agent
@@ -122,7 +155,7 @@ agent = ReActAgent(
     llm=llm
 )
 
-react_system_prompt = PromptTemplate(react_header_prompt + system_prompt)
+react_system_prompt = PromptTemplate(react_header_prompt + examples,)
 
 agent.update_prompts({'react_header': react_system_prompt})
 
