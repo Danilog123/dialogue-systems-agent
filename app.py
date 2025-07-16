@@ -12,7 +12,7 @@ today = datetime.now().strftime("%Y-%m-%d")
 
 load_dotenv()
 
-llm = OpenAI(model="gpt-4o-mini")
+llm = OpenAI(model="gpt-4o")
 
 # Import tools
 tools = [duckduckgo_tool(), summarize_webpage_tool(), weather_tool(), date_tool(), browse_rausgegangen_de_categories_tool(), classify_query_tool(), store_fact_tool(), create_ics_tool(), more_information_tool()]
@@ -69,12 +69,10 @@ Answer: [your answer here (In the same language as the user's question)]
 ```
 """
 system_prompt = f"""
-## Additional Rules
+## Important Rules
 
 GENERAL BEHAVIOR:
-- Always use tools to answer questions whenever possible.
 - If the user’s request is vague (e.g., no date or city), ask clarifying follow-up questions. 
-- Prefix clarifying questions with "Follow-up:" and ask **only one thing at a time**.
 
 CURRENT DATE:
 - Today’s date is: {today}.
@@ -89,6 +87,7 @@ TOOL USAGE RULES:
 - NEVER answer based only on search result titles or URLs.
 - Always use the weather tool if the request involves outdoor activities.
 - Store facts about the user using the StoreFact tool. These facts should help you to complete your task better and supply the user with more relevant information. Store facts like but not exclusivly: hometown, age, taste in activities, personal habits, social situation, etc. ALWAYS THINK ABOUT WHAT YOU CAN STORE ABOUT THE USER. Store information on your own, even if it not clearly stated as a fact.
+- Only Store one fact at a time. Do NEVER store a fact as a combination of information, like: "The User lives in city X and is free on Y". Use the StoreFact tool multiple times if needed.
 - DO NOT USE THE StoreFact TOOL TO RETRIEVE FACTS. THE FACTS GET PRESENTED TO YOU BEFORE THE CONVERSATION WITH THE USER.
 - You can use create_ics_tool to create an calendar entry. Ask the user if he wants one.
 
@@ -98,14 +97,15 @@ PAGE CONTENT RULES:
 - If the page content is empty, vague, or outdated, say so honestly.
 - Do NOT suggest events labeled with “tomorrow”, “this weekend”, or “soon” — only those clearly happening TODAY.
 
-FINAL ANSWER CHECKLIST:
-- Did you confirm the event info from the page itself?
-- Is the date explicitly today?
-- Are the time, place, and price mentioned?
-- Did you include the source link?
+FINAL ANSWER:
+- The info has to be sourced form the page
+- The date has to be mentioned
+- The time, place, and price have to be mentioned
+- The source link has to be included
 
 If any of these are missing, say: “I could not find a confirmed event for today based on the available pages.”
-Your goal is to be **factual, cautious, and honest**. It's better to admit uncertainty than to make something up.
+Your goal is to be **factual, cautious, and honest**.
+
 Here are some facts about the user based on previous interactions:
 
 {load_facts()}
@@ -143,17 +143,18 @@ async def run_agent(message):
   return toughts.strip(), tool_calls.strip(), final.strip()
 
 
-with gr.Blocks() as gradio_ui:
+with gr.Blocks(fill_height=True) as gradio_ui:
   gr.Markdown("# 🧠 LlamaIndex Tool-Using Chatbot")
   with gr.Row():
-    chatbot = gr.Chatbot(type="messages")
-    with gr.Column():
+    chatbot = gr.Chatbot(type="messages", show_copy_button=True)
+    with gr.Column(visible=False) as right_column:
       thoughts_box = gr.Textbox(label="🧠 Agent Thoughts", lines=8)
       tools_box = gr.Textbox(label="🔧 Tool Calls", lines=8)
       file_download = gr.File(label="📅 ICS-file", visible=False)
 
   msg = gr.Textbox(label="Your message")
   send_btn = gr.Button("Send")
+  toggle_btn = gr.Button("Toggle Debug View")
 
 
   async def respond(user_input, chat_history):
@@ -175,6 +176,14 @@ with gr.Blocks() as gradio_ui:
 
   send_btn.click(fn=respond, inputs=[msg, chatbot], outputs=[chatbot, thoughts_box, tools_box, msg, file_download])
   msg.submit(fn=respond, inputs=[msg, chatbot], outputs=[chatbot, thoughts_box, tools_box, msg, file_download])
+
+  # Keep track of visibility state
+  show_debug = gr.State(value=True)
+
+  def toggle_debug_view(show):
+    return gr.update(visible=not show), not show
+
+  toggle_btn.click(fn=toggle_debug_view, inputs=[show_debug], outputs=[right_column, show_debug])
 
 if __name__ == "__main__":
   gradio_ui.launch(inbrowser=True)

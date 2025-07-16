@@ -66,9 +66,9 @@ def get_weather(city: str) -> str:
     try:
         response = requests.get(f"https://wttr.in/{city}", timeout=10)
         response.raise_for_status()
-        return response.text.strip()
+        return "Observation: " + response.text.strip() + "\n"
     except Exception as e:
-        return f"An error occurred: {e}"
+        return "Observation: " + f"An error occurred: {e}" + "\n"
 
 def weather_tool():
     '''
@@ -92,7 +92,7 @@ def summarize_webpage(url: str) -> str:
         page.goto(url)
         text = page.inner_text("body")
         browser.close()
-        return text
+        return "Observation: " + text + "\n"
 
 def summarize_webpage_tool():
     '''
@@ -111,7 +111,7 @@ def get_category_examples() -> str:
     # Read json-file with examples of events taken from rausgegangen.de
     with open("example_categories.json", "r") as f:
         category_examples = json.load(f)
-    return category_examples
+    return "Observation: " + category_examples + "\n"
 
 
 def classify_query_tool():
@@ -129,7 +129,7 @@ def classify_query_tool():
 def browse_rausgegangen_de_categories(city:str, category: str,) -> str:
     url= f"https://rausgegangen.de/{city}/kategorie/{category}"
     print(url)
-    return url
+    return "Observation: " + url + "\n"
 
 def browse_rausgegangen_de_categories_tool():
     '''
@@ -154,7 +154,7 @@ def more_information_rausgegangen_event(url:str, event_name:str) -> str:
         page.goto(url)
         page.get_by_role("link", name=event_name).click()
         context.close()
-        return page.url
+        return "Observation: " + page.url + "\n"
 
 def more_information_tool():
     return FunctionTool.from_defaults(
@@ -174,12 +174,12 @@ def load_facts():
 def store_fact(new_fact: str) -> str:
     facts = load_facts()
     if new_fact in facts:
-        return f"Fact '{new_fact}' was already stored."
+        return "Observation: " + f"Fact '{new_fact}' was already stored." + "\n"
     else:
         facts.append(new_fact)
         with open(FACTS_FILE, "w") as f:
             json.dump(facts, f)
-        return f"Fact stored: {new_fact}"
+        return "Observation: " + f"Fact stored: {new_fact}" + "\n"
 
 
 def store_fact_tool():
@@ -212,7 +212,7 @@ def create_ics_event(name:str, date:str, time:str, location:Optional[str] = None
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w') as f:
         f.writelines(c.serialize_iter())
-    return f"{path}"
+    return "Observation: " + f"{path}" + "\n"
 
 def create_ics_tool():
     '''
