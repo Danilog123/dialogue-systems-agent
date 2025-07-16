@@ -109,10 +109,12 @@ Your goal is to be **factual, cautious, and honest**.
 Here are some facts about the user based on previous interactions:
 
 {load_facts()}
+
 """
 
 examples ="""
-##Example Conversation
+## Example Conversation
+
 User: Hello, I want to do something today. What can you recommend?
 Thought: The user wants to do something today. I need information about the weather, the user's location, the date and their preferences.
 Action: get_date
@@ -146,7 +148,13 @@ If the user asks for an event that is not in the Rausgegangen.de categories, use
 Thought: I could not find any Pubquiz events in the aktiv-und-kreativ or nachtleben categories in Berlin for today. I will try to search the web for Pubquiz events in Berlin today.
 Action: duckduckgo_websearch
 Action Input: {{"query": "Pubquiz in Berlin today"}}
+
 Example end
+
+## Current Conversation
+
+Below is the current conversation consisting of interleaving human and assistant messages.
+
 """
 
 # Define Agent
@@ -155,7 +163,7 @@ agent = ReActAgent(
     llm=llm
 )
 
-react_system_prompt = PromptTemplate(react_header_prompt + examples,)
+react_system_prompt = PromptTemplate(react_header_prompt + system_prompt + examples)
 
 agent.update_prompts({'react_header': react_system_prompt})
 
