@@ -185,7 +185,7 @@ async def run_agent(message):
 
 
 with gr.Blocks(fill_height=True) as gradio_ui:
-  gr.Markdown("# 🧠 LlamaIndex Tool-Using Chatbot")
+  gr.Markdown("# Local Event Agent - Group 42")
   with gr.Row():
     chatbot = gr.Chatbot(type="messages", show_copy_button=True)
     with gr.Column(visible=False) as right_column:
