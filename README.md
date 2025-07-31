@@ -30,6 +30,14 @@ Additionally install **playwright**. It is necessary for the agent's web search.
 playwright install
 ```
 
+### .env-File
+
+Create a ".env" file with the following key:
+
+```
+OPENAI_API_KEY=sk-proj-...
+```
+
 ### Start App
 
 ```bash
